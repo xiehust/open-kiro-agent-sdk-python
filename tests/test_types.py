@@ -1,5 +1,6 @@
 """Tests for type definitions."""
 
+from pathlib import Path
 from kiro_agent_sdk.types import (
     TextBlock,
     ToolUseBlock,
@@ -7,6 +8,8 @@ from kiro_agent_sdk.types import (
     AssistantMessage,
     UserMessage,
     ToolResultMessage,
+    KiroAgentOptions,
+    SessionInfo,
 )
 
 
@@ -84,3 +87,54 @@ def test_tool_result_message_creation():
     assert message.role == "tool_result"
     assert message.tool_use_id == "tool-123"
     assert len(message.content) == 1
+
+
+def test_kiro_agent_options_defaults():
+    """Test KiroAgentOptions with all defaults."""
+    options = KiroAgentOptions()
+    assert options.system_prompt is None
+    assert options.model is None
+    assert options.max_turns is None
+    assert options.temperature is None
+    assert options.allowed_tools is None
+    assert options.trust_all_tools is False
+    assert options.mcp_servers is None
+    assert options.cwd is None
+    assert options.cli_path is None
+    assert options.verbose == 0
+    assert options.resume_session is None
+
+
+def test_kiro_agent_options_with_values():
+    """Test KiroAgentOptions with custom values."""
+    options = KiroAgentOptions(
+        system_prompt="You are helpful",
+        model="claude-opus-4",
+        max_turns=5,
+        temperature=0.7,
+        allowed_tools=["Bash", "Read"],
+        trust_all_tools=False,
+        cwd=Path("/tmp"),
+        verbose=2
+    )
+    assert options.system_prompt == "You are helpful"
+    assert options.model == "claude-opus-4"
+    assert options.max_turns == 5
+    assert options.temperature == 0.7
+    assert options.allowed_tools == ["Bash", "Read"]
+    assert options.cwd == Path("/tmp")
+    assert options.verbose == 2
+
+
+def test_session_info_creation():
+    """Test SessionInfo dataclass."""
+    session = SessionInfo(
+        id="sess-123",
+        created_at="2024-01-01T00:00:00Z",
+        last_active="2024-01-01T01:00:00Z",
+        message_count=5
+    )
+    assert session.id == "sess-123"
+    assert session.created_at == "2024-01-01T00:00:00Z"
+    assert session.last_active == "2024-01-01T01:00:00Z"
+    assert session.message_count == 5
