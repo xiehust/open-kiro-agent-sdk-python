@@ -1,6 +1,21 @@
+<div align="center">
+
 # Kiro Agent SDK for Python
 
-Python SDK for Kiro Agent. Build AI applications with async/await patterns.
+**Build AI applications with async/await patterns**
+
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
+[![PyPI](https://img.shields.io/badge/pypi-v0.1.0-orange.svg)](https://pypi.org/project/kiro-agent-sdk/)
+
+[Getting Started](docs/guide/getting-started.md) |
+[API Reference](docs/guide/api-reference.md) |
+[Examples](docs/guide/examples.md) |
+[User Guide](docs/guide/index.md)
+
+</div>
+
+---
 
 ## Installation
 
@@ -55,6 +70,19 @@ async for message in query(prompt="List files", options=options):
 
 See [examples/](examples/) directory for more:
 - [quick_start.py](examples/quick_start.py) - Basic usage
+
+## Documentation
+
+Full documentation available in [docs/guide/](docs/guide/):
+
+| Guide | Description |
+|-------|-------------|
+| [Getting Started](docs/guide/getting-started.md) | Installation, prerequisites, first query |
+| [API Reference](docs/guide/api-reference.md) | Complete API documentation |
+| [Examples](docs/guide/examples.md) | Common use cases with runnable code |
+| [Error Handling](docs/guide/error-handling.md) | Error types and handling patterns |
+| [Architecture](docs/guide/architecture.md) | How the SDK works |
+| [Troubleshooting](docs/guide/troubleshooting.md) | Common issues and solutions |
 
 ## Development
 
