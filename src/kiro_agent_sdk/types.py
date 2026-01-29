@@ -30,3 +30,28 @@ class ToolResultBlock:
     content: str
     is_error: bool = False
     type: str = field(default="tool_result", init=False)
+
+
+@dataclass
+class AssistantMessage:
+    """Message from assistant."""
+
+    content: list[TextBlock | ToolUseBlock]
+    role: str = field(default="assistant", init=False)
+
+
+@dataclass
+class UserMessage:
+    """Message from user."""
+
+    content: list[TextBlock]
+    role: str = field(default="user", init=False)
+
+
+@dataclass
+class ToolResultMessage:
+    """Tool result message."""
+
+    tool_use_id: str
+    content: list[TextBlock]
+    role: str = field(default="tool_result", init=False)

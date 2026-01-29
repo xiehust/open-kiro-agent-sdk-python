@@ -1,6 +1,13 @@
 """Tests for type definitions."""
 
-from kiro_agent_sdk.types import TextBlock, ToolUseBlock, ToolResultBlock
+from kiro_agent_sdk.types import (
+    TextBlock,
+    ToolUseBlock,
+    ToolResultBlock,
+    AssistantMessage,
+    UserMessage,
+    ToolResultMessage,
+)
 
 
 def test_text_block_creation():
@@ -44,3 +51,36 @@ def test_tool_result_block_with_error():
         is_error=True
     )
     assert block.is_error is True
+
+
+def test_assistant_message_creation():
+    """Test AssistantMessage with content blocks."""
+    message = AssistantMessage(
+        content=[
+            TextBlock(text="Hello!"),
+            ToolUseBlock(id="t1", name="Bash", input={"command": "ls"})
+        ]
+    )
+    assert message.role == "assistant"
+    assert len(message.content) == 2
+    assert isinstance(message.content[0], TextBlock)
+    assert isinstance(message.content[1], ToolUseBlock)
+
+
+def test_user_message_creation():
+    """Test UserMessage with text content."""
+    message = UserMessage(content=[TextBlock(text="Hi there")])
+    assert message.role == "user"
+    assert len(message.content) == 1
+    assert message.content[0].text == "Hi there"
+
+
+def test_tool_result_message_creation():
+    """Test ToolResultMessage."""
+    message = ToolResultMessage(
+        tool_use_id="tool-123",
+        content=[TextBlock(text="Success")]
+    )
+    assert message.role == "tool_result"
+    assert message.tool_use_id == "tool-123"
+    assert len(message.content) == 1
