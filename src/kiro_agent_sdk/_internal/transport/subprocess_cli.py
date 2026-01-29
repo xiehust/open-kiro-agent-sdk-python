@@ -1,9 +1,12 @@
 """Subprocess transport for kiro-cli."""
 
 import asyncio
+import json
 import os
+from collections.abc import AsyncIterator
+from typing import Any
 
-from kiro_agent_sdk._errors import CLINotFoundError
+from kiro_agent_sdk._errors import CLIJSONDecodeError, CLINotFoundError
 from kiro_agent_sdk.types import KiroAgentOptions
 
 
@@ -80,3 +83,30 @@ class KiroSubprocessTransport:
         except asyncio.TimeoutError:
             self.process.kill()
             await self.process.wait()
+
+    async def send_message(self, message: dict[str, Any]) -> None:
+        """Send JSON message to CLI stdin."""
+        if not self.process or not self.process.stdin:
+            raise RuntimeError("Process not started")
+
+        data = json.dumps(message) + "\n"
+        self.process.stdin.write(data.encode())
+        await self.process.stdin.drain()
+
+    async def receive_messages(self) -> AsyncIterator[dict[str, Any]]:
+        """Stream JSON messages from CLI stdout."""
+        if not self.process or not self.process.stdout:
+            raise RuntimeError("Process not started")
+
+        async for line in self.process.stdout:
+            line_str = line.decode().strip()
+            if not line_str:
+                continue
+
+            try:
+                yield json.loads(line_str)
+            except json.JSONDecodeError as e:
+                raise CLIJSONDecodeError(
+                    f"Failed to parse JSON from CLI: {e}",
+                    raw_output=line_str
+                ) from e

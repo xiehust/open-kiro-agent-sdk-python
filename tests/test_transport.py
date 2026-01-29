@@ -4,6 +4,7 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from kiro_agent_sdk._errors import CLIJSONDecodeError
 from kiro_agent_sdk._internal.transport.subprocess_cli import KiroSubprocessTransport
 from kiro_agent_sdk.types import KiroAgentOptions
 
@@ -144,3 +145,94 @@ async def test_stop_kills_if_timeout():
 
     mock_process.terminate.assert_called_once()
     mock_process.kill.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_send_message():
+    """Test sending JSON message to CLI stdin."""
+    transport = KiroSubprocessTransport()
+
+    # Mock process with stdin
+    mock_stdin = MagicMock()
+    mock_stdin.write = MagicMock()
+    mock_stdin.drain = AsyncMock()
+
+    mock_process = MagicMock()
+    mock_process.stdin = mock_stdin
+    transport.process = mock_process
+
+    message = {"role": "user", "content": "Hello"}
+    await transport.send_message(message)
+
+    # Verify JSON was written
+    mock_stdin.write.assert_called_once()
+    written_data = mock_stdin.write.call_args[0][0]
+    assert b'"role": "user"' in written_data
+    assert b'"content": "Hello"' in written_data
+    mock_stdin.drain.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_receive_messages():
+    """Test receiving JSON messages from CLI stdout."""
+    transport = KiroSubprocessTransport()
+
+    # Mock process with stdout
+    async def mock_stdout():
+        yield b'{"role": "assistant", "content": "Hi"}\n'
+        yield b'{"role": "assistant", "content": "Bye"}\n'
+
+    mock_process = MagicMock()
+    mock_process.stdout = mock_stdout()
+    transport.process = mock_process
+
+    messages = []
+    async for msg in transport.receive_messages():
+        messages.append(msg)
+
+    assert len(messages) == 2
+    assert messages[0]["role"] == "assistant"
+    assert messages[0]["content"] == "Hi"
+    assert messages[1]["content"] == "Bye"
+
+
+@pytest.mark.asyncio
+async def test_receive_messages_skips_empty_lines():
+    """Test receive_messages skips empty lines."""
+    transport = KiroSubprocessTransport()
+
+    async def mock_stdout():
+        yield b'{"role": "assistant"}\n'
+        yield b'\n'  # Empty line
+        yield b'  \n'  # Whitespace only
+        yield b'{"role": "user"}\n'
+
+    mock_process = MagicMock()
+    mock_process.stdout = mock_stdout()
+    transport.process = mock_process
+
+    messages = []
+    async for msg in transport.receive_messages():
+        messages.append(msg)
+
+    # Should only get 2 messages (empty lines skipped)
+    assert len(messages) == 2
+
+
+@pytest.mark.asyncio
+async def test_receive_messages_raises_on_invalid_json():
+    """Test receive_messages raises CLIJSONDecodeError on bad JSON."""
+    transport = KiroSubprocessTransport()
+
+    async def mock_stdout():
+        yield b'{invalid json\n'
+
+    mock_process = MagicMock()
+    mock_process.stdout = mock_stdout()
+    transport.process = mock_process
+
+    with pytest.raises(CLIJSONDecodeError) as exc_info:
+        async for msg in transport.receive_messages():
+            pass
+
+    assert "invalid json" in exc_info.value.raw_output
